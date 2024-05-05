@@ -2,7 +2,7 @@ const express = require('express');
 const fetch = require('node-fetch');
 const { isIPAddress, sleep } = require('./helpers'); 
 
-const apikey = 'YOUR API KEY'; // INSERT YOUR API KEY HERE
+const apikey = 'API_KEY_HERE'; // INSERT YOUR API KEY HERE
 
 const app = express();
 
@@ -13,13 +13,23 @@ app.use(express.static('public'));
 app.post('/checkHashes', async (req, res) => {
     const { hashes } = req.body;
     const analysisResults = [];
+    const uniqueHashes = new Set(); 
 
     try {
         const hashesArray = hashes.trim().split('\n');
-        const shouldSkipSleep = hashesArray.length < 4;
 
-        for (const hash of hashesArray) {
+        hashesArray.forEach(hash => {
             const trimmedHash = hash.trim();
+            if (!isIPAddress(trimmedHash)) {
+                uniqueHashes.add(trimmedHash);
+            } else {
+                console.log(`Skipped IP address: ${trimmedHash}`);
+            }
+        });
+
+        const shouldSkipSleep = uniqueHashes.size < 4;
+
+        for (const trimmedHash of uniqueHashes) {
             let hashType;
 
             switch (trimmedHash.length) {
@@ -34,11 +44,6 @@ app.post('/checkHashes', async (req, res) => {
                     break;
                 default:
                     hashType = 'Unknown';
-            }
-
-            if (isIPAddress(trimmedHash)) {
-                console.log(`Skipped IP address: ${trimmedHash}`);
-                continue;
             }
 
             if (!shouldSkipSleep) {
@@ -77,7 +82,6 @@ app.post('/checkHashes', async (req, res) => {
         res.status(500).json({ success: false, message: 'Error occurred while checking hashes.' });
     }
 });
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
