@@ -9,6 +9,7 @@ Due to API key limitations of 4 requests/minute, there's a sleep timer in betwee
 
 <h3>How to use:</h3>
 
-1. Edit ```app.js``` file and put your VirusTotal API key on the ```apikey``` field.
-2. Run the following: ```node app.js```
-3. Open ```localhost:3000```
+1. Clone this repository.
+2. Edit ```app.js``` file and put your VirusTotal API key on the ```apikey``` field.
+3. Run the following: ```node app.js```
+4. Open ```localhost:3000```
