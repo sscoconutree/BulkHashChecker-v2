@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VirusTotal Hash Checker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>VirusTotal Hash Checker</h1>
+        <textarea id="hashInput" placeholder="Paste your hashes here"></textarea>
+        <button id="checkButton">Check Hashes</button>
+        <div id="analysisResult"></div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    showCopyMessage();
+                })
+                .catch(err => {
+                    console.error('Failed to copy:', err);
+                });
+        }
+
+    </script>
+</body>
+</html>
