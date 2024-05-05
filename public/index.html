@@ -13,19 +13,6 @@
         <button id="checkButton">Check Hashes</button>
         <div id="analysisResult"></div>
     </div>
-
     <script src="script.js"></script>
-    <script>
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text)
-                .then(() => {
-                    showCopyMessage();
-                })
-                .catch(err => {
-                    console.error('Failed to copy:', err);
-                });
-        }
-
-    </script>
 </body>
 </html>
