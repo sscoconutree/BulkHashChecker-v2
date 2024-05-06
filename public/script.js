@@ -26,10 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return resetInputElements();
         }
 
-        // Disable input and button during scanning
         hashInput.disabled = true;
         checkButton.disabled = true;
-        checkButton.classList.add('scanning'); // Apply scanning style
+        checkButton.classList.add('scanning'); 
 
         try {
             const response = await fetch('/checkHashes', {
@@ -59,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 flashErrorMessage('API limit has been reached. Please try again later.');
             }
         } finally {
-            // Reset input and button after scanning completes (whether success or error)
+            
             resetInputElements();
         }
     });
@@ -67,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetInputElements() {
         hashInput.disabled = false;
         checkButton.disabled = false;
-        checkButton.classList.remove('scanning'); // Remove scanning style
+        checkButton.classList.remove('scanning'); 
     }
 
     function displayAnalysisResults(results) {
