@@ -2,7 +2,7 @@ const express = require('express');
 const fetch = require('node-fetch');
 const { isIPAddress, sleep } = require('./helpers'); 
 
-const apikey = 'API_KEY_HERE'; // INSERT YOUR API KEY HERE
+const apikey = 'API KEY HERE'; // INSERT YOUR API KEY HERE
 
 const app = express();
 
