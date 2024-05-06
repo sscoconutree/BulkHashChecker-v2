@@ -9,7 +9,10 @@
 <body>
     <div class="container">
         <h1>VirusTotal Hash Checker</h1>
-        <textarea id="hashInput" placeholder="Paste your hashes here"></textarea>
+        <div class="inputContainer">
+            <textarea id="hashInput" placeholder="Paste your hashes here"></textarea>
+            <div id="characterCounter">(0/500)</div>
+        </div>
         <button id="checkButton">Check Hashes</button>
         <div id="analysisResult"></div>
     </div>
