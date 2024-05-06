@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let inputText = hashInput.value;
         let lines = inputText.split('\n').filter(line => line.trim() !== '');
 
-        // Truncate input to maximum allowed lines
         if (lines.length > maxLines) {
             lines = lines.slice(0, maxLines);
             inputText = lines.join('\n');
