@@ -8,33 +8,28 @@ document.addEventListener('DOMContentLoaded', () => {
         let inputText = hashInput.value;
         let lines = inputText.split('\n').filter(line => line.trim() !== '');
 
+        // Truncate input to maximum allowed lines
         if (lines.length > maxLines) {
-            const truncatedLines = lines.slice(0, maxLines);
-            inputText = truncatedLines.join('\n');
+            lines = lines.slice(0, maxLines);
+            inputText = lines.join('\n');
             hashInput.value = inputText;
         }
 
-        lines = inputText.split('\n').filter(line => line.trim() !== '');
         const lineCount = lines.length;
-
         characterCounter.textContent = `(${lineCount}/${maxLines})`;
-
-        if (lineCount > maxLines) {
-            checkButton.disabled = true;
-        } else {
-            checkButton.disabled = false;
-        }
+        checkButton.disabled = lineCount === 0;
     });
 
     checkButton.addEventListener('click', async () => {
-        hashInput.disabled = true;
-        checkButton.disabled = true;
-
         const inputText = hashInput.value.trim();
         if (inputText === '') {
-            resetInputElements();
-            return;
+            return resetInputElements();
         }
+
+        // Disable input and button during scanning
+        hashInput.disabled = true;
+        checkButton.disabled = true;
+        checkButton.classList.add('scanning'); // Apply scanning style
 
         try {
             const response = await fetch('/checkHashes', {
@@ -46,22 +41,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                handleErrorResponse(response.status);
-                return;
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Invalid response format. Expected JSON.');
             }
 
             const data = await response.json();
-
-            if (!data.success) {
-                handleServerError(data.message);
-                return;
-            }
-
             displayAnalysisResults(data.analysisResults);
         } catch (error) {
-            console.error('Error occurred:', error);
-            handleUnexpectedError();
+            console.error('Error occurred while checking hashes:', error);
+            if (error.message.includes('invalid json response body')) {
+                flashErrorMessage('Invalid JSON response. Please try again.');
+            } else {
+                flashErrorMessage('API limit has been reached. Please try again later.');
+            }
         } finally {
+            // Reset input and button after scanning completes (whether success or error)
             resetInputElements();
         }
     });
@@ -69,22 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetInputElements() {
         hashInput.disabled = false;
         checkButton.disabled = false;
-    }
-
-    function handleErrorResponse(status) {
-        if (status === 500) {
-            flashApiLimitError('API limit has been reached. Please try again later.');
-        } else {
-            console.error('Error:', status);
-            flashMessage('An error occurred. Please try again.');
-        }
-        resetInputElements();
-    }
-
-    function handleServerError(errorMessage) {
-        console.error('Server Error:', errorMessage);
-        flashMessage('An error occurred while processing your request. Please try again.');
-        resetInputElements();
+        checkButton.classList.remove('scanning'); // Remove scanning style
     }
 
     function displayAnalysisResults(results) {
@@ -108,15 +91,14 @@ document.addEventListener('DOMContentLoaded', () => {
         analysisResult.appendChild(copyButton);
     }
 
-    function flashApiLimitError(message) {
-        const flashContainer = createFlashElement(message, 'red');
-        document.body.appendChild(flashContainer);
+    function flashErrorMessage(message) {
+        const flashMessage = document.createElement('div');
+        flashMessage.textContent = message;
+        flashMessage.classList.add('flashMessage');
+        document.body.appendChild(flashMessage);
 
         setTimeout(() => {
-            flashContainer.style.opacity = '0';
-            setTimeout(() => {
-                flashContainer.remove();
-            }, 1000);
+            flashMessage.remove();
         }, 3000);
     }
 
