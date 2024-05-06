@@ -10,7 +10,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public')); 
 
+let apiRequestCount = 0;
+const maxApiRequests = 500;
+
 app.post('/checkHashes', async (req, res) => {
+    if (apiRequestCount >= maxApiRequests) {
+        const errorMessage = 'Maximum API daily quota has been reached. Please try again tomorrow.';
+        console.log(errorMessage);
+        return res.status(429).json({ success: false, message: errorMessage });
+    }
+
     const { hashes } = req.body;
     const analysisResults = [];
     const uniqueHashes = new Set(); 
@@ -51,34 +60,58 @@ app.post('/checkHashes', async (req, res) => {
             }
 
             const response = await fetch(`https://www.virustotal.com/vtapi/v2/file/report?apikey=${apikey}&resource=${trimmedHash}`);
+            apiRequestCount++;
+
             const result = await response.json();
 
-            if (result.positives !== 0) {
+            if (typeof result.positives === 'undefined') {
+                analysisResults.push({ 
+                    hash: trimmedHash,
+                    type: hashType,
+                    status: 'Unknown'
+                });
+                console.log(`Hash ${trimmedHash} analysis result is unknown.`);
+            } else if (result.positives !== 0) {
                 analysisResults.push({ 
                     hash: trimmedHash,
                     type: hashType,
                     status: 'Malicious',
                     enginesDetected: result.positives
                 });
+                console.log(`Hash ${trimmedHash} is malicious (${result.positives} engines detected).`);
             } else {
                 analysisResults.push({ 
                     hash: trimmedHash,
                     type: hashType,
                     status: 'Clean'
                 });
+                console.log(`Hash ${trimmedHash} is clean.`);
             }
         }
 
         // Prepare a color-coded response based on analysis results
-        const formattedResults = analysisResults.map(result => ({
-            message: `${result.hash} (${result.type}) - ${result.status === 'Malicious' ? 
-                `${result.enginesDetected} engines detected it as malicious` : 'Clean'}`,
-            color: result.status === 'Malicious' ? 'red' : 'green'
-        }));
+        const formattedResults = analysisResults.map(result => {
+            let message;
+            let color;
+            
+            if (result.status === 'Malicious') {
+                message = `${result.hash} (${result.type}) - ${result.enginesDetected} engines detected it as malicious`;
+                color = 'red';
+            } else if (result.status === 'Clean') {
+                message = `${result.hash} (${result.type}) - Clean`;
+                color = 'green';
+            } else {
+                message = `${result.hash} (${result.type}) - No matches found`;
+                color = 'gray';
+            }
+            
+            return { message, color };
+        });
 
         res.json({ success: true, analysisResults: formattedResults });
     } catch (error) {
         console.error('Error occurred:', error);
+        console.log('Error occurred while checking hashes:', error.message);
         res.status(500).json({ success: false, message: 'Error occurred while checking hashes.' });
     }
 });
