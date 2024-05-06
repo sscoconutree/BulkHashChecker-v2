@@ -15,3 +15,8 @@ Due to API key limitations of 4 requests/minute, there's a sleep timer in betwee
 4. Open ```localhost:3000```
 
 # CHANGELOGS
+
+v2.1
+-Added a maximum of 500 input hash limit to cater the daily quota of non-premium VirusTotal API.
+-Added an error handling feature if maximum API daily quota has been reached.
+-Improved result description and color scheme for the identified hashes.
