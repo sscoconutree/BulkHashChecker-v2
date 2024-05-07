@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let inputText = hashInput.value;
         let lines = inputText.split('\n').filter(line => line.trim() !== '');
 
+        
         if (lines.length > maxLines) {
             lines = lines.slice(0, maxLines);
             inputText = lines.join('\n');
@@ -24,11 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (inputText === '') {
             return resetInputElements();
         }
-
+    
         hashInput.disabled = true;
         checkButton.disabled = true;
-        checkButton.classList.add('scanning'); 
-
+        checkButton.classList.add('scanning');
+    
+        let analysisResults = []; 
+    
         try {
             const response = await fetch('/checkHashes', {
                 method: 'POST',
@@ -37,31 +40,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({ hashes: inputText })
             });
-
+    
             if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                throw new Error(`${response.status}`);
             }
-
+    
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
                 throw new Error('Invalid response format. Expected JSON.');
             }
-
+    
             const data = await response.json();
-            displayAnalysisResults(data.analysisResults);
-        } catch (error) {
-            console.error('Error occurred while checking hashes:', error);
-            if (error.message.includes('invalid json response body')) {
-                flashErrorMessage('Invalid JSON response. Please try again.');
-            } else {
-                flashErrorMessage('API limit has been reached. Please try again later.');
-            }
-        } finally {
-            
-            resetInputElements();
-        }
-    });
+            analysisResults = data.analysisResults; 
 
+        } catch (error) {
+            console.error('Error occurred:', error);
+        
+            if (error.message.includes('500')) {
+                flashErrorMessage('API limit has been reached or there\'s no connection to the server. Please try again later.');
+                displayAnalysisResults(analysisResults);
+                resetInputElements();
+            } else {
+                displayAnalysisResults(analysisResults);
+                resetInputElements();
+            }
+        
+        
+        } finally {
+           
+            displayAnalysisResults(analysisResults);
+            resetInputElements();
+        }              
+  
+    });
+    
+    
     function resetInputElements() {
         hashInput.disabled = false;
         checkButton.disabled = false;
@@ -97,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setTimeout(() => {
             flashMessage.remove();
-        }, 3000);
+        }, 4000);
     }
 
     function copyToClipboard(text) {
