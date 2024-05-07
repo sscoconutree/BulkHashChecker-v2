@@ -1,14 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
     const hashInput = document.getElementById('hashInput');
     const checkButton = document.getElementById('checkButton');
-    const maxLines = 500;
     const characterCounter = document.getElementById('characterCounter');
+    const analysisResultContainer = document.getElementById('analysisResult');
+    let copyButton = null;
+    const maxLines = 500; 
+
+    characterCounter.textContent = `(0/${maxLines})`;
 
     hashInput.addEventListener('input', () => {
         let inputText = hashInput.value;
-        let lines = inputText.split('\n').filter(line => line.trim() !== '');
+        let lines = inputText.split('\n').filter(line => line.trim() !== ''); 
 
-        
         if (lines.length > maxLines) {
             lines = lines.slice(0, maxLines);
             inputText = lines.join('\n');
@@ -17,89 +20,131 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const lineCount = lines.length;
         characterCounter.textContent = `(${lineCount}/${maxLines})`;
-        checkButton.disabled = lineCount === 0;
+
+        checkButton.disabled = lineCount === 0 || lineCount > maxLines;
+    });
+
+    hashInput.addEventListener('keydown', (event) => {
+        const lines = hashInput.value.split('\n').filter(line => line.trim() !== ''); 
+        const lineCount = lines.length;
+
+        if (lineCount >= maxLines && event.key === 'Enter') {
+            event.preventDefault();
+        }
     });
 
     checkButton.addEventListener('click', async () => {
         const inputText = hashInput.value.trim();
         if (inputText === '') {
-            return resetInputElements();
+            return;
         }
-    
+
+        resetUI();
+
+        let lines = inputText.split('\n').filter(line => line.trim() !== ''); 
+        lines = lines.slice(0, maxLines); 
+        const uniqueLines = Array.from(new Set(lines));
+
         hashInput.disabled = true;
         checkButton.disabled = true;
         checkButton.classList.add('scanning');
-    
-        let analysisResults = []; 
-    
+
         try {
             const response = await fetch('/checkHashes', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ hashes: inputText })
+                body: JSON.stringify({ hashes: uniqueLines.join('\n') })
             });
-    
+
             if (!response.ok) {
-                throw new Error(`${response.status}`);
+                throw new Error(`Server returned ${response.status}`);
             }
-    
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                throw new Error('Invalid response format. Expected JSON.');
+
+            const reader = response.body.getReader();
+            let partialData = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                partialData += new TextDecoder().decode(value);
+                const results = partialData.split('\n').filter(Boolean);
+
+                for (const result of results) {
+                    const { success, analysisResult, message } = JSON.parse(result);
+
+                    if (success) {
+                        displayAnalysisResult(analysisResult);
+
+                        if (!copyButton) {
+                            showCopyButton();
+                        }
+                    } else {
+                        console.error('Error occurred:', message);
+                        flashErrorMessage('API limit has been reached or there\'s no connection to the server. Please try again later.');
+                    }
+                }
+
+                partialData = '';
             }
-    
-            const data = await response.json();
-            analysisResults = data.analysisResults; 
 
         } catch (error) {
             console.error('Error occurred:', error);
-        
+            
             if (error.message.includes('500')) {
                 flashErrorMessage('API limit has been reached or there\'s no connection to the server. Please try again later.');
                 displayAnalysisResults(analysisResults);
                 resetInputElements();
-            } else {
-                displayAnalysisResults(analysisResults);
-                resetInputElements();
             }
-        
-        
         } finally {
-           
-            displayAnalysisResults(analysisResults);
-            resetInputElements();
-        }              
-  
+            hashInput.disabled = false;
+            checkButton.disabled = false;
+            checkButton.classList.remove('scanning');
+        }
     });
-    
-    
-    function resetInputElements() {
-        hashInput.disabled = false;
-        checkButton.disabled = false;
-        checkButton.classList.remove('scanning'); 
+
+    function resetUI() {
+        analysisResultContainer.innerHTML = '';
+        removeCopyButton();
     }
 
-    function displayAnalysisResults(results) {
-        const analysisResult = document.getElementById('analysisResult');
-        analysisResult.innerHTML = '';
+    function displayAnalysisResult(result) {
+        const listItem = document.createElement('li');
 
-        results.forEach(result => {
-            const listItem = document.createElement('li');
-            listItem.textContent = result.message;
-            listItem.style.color = result.color;
-            analysisResult.appendChild(listItem);
-        });
+        if (result.status === 'Malicious') {
+            listItem.textContent = `${result.hash} (${result.type}) - ${result.enginesDetected} engines detected it as malicious`;
+            listItem.style.color = 'red';
+        } else if (result.status === 'Clean') {
+            listItem.textContent = `${result.hash} (${result.type}) - Clean`;
+            listItem.style.color = 'green';
+        } else {
+            listItem.textContent = `${result.hash} (${result.type}) - No matches found`;
+            listItem.style.color = 'gray';
+        }
 
-        const copyButton = document.createElement('button');
+        analysisResultContainer.appendChild(listItem);
+    }
+
+    function showCopyButton() {
+        copyButton = document.createElement('button');
         copyButton.textContent = 'Copy Results';
         copyButton.classList.add('copyButton');
         copyButton.addEventListener('click', () => {
-            const textToCopy = results.map(result => result.message).join('\n');
+            const textToCopy = Array.from(analysisResultContainer.children)
+                .map(li => li.textContent)
+                .join('\n');
             copyToClipboard(textToCopy);
         });
-        analysisResult.appendChild(copyButton);
+        analysisResultContainer.parentNode.appendChild(copyButton); 
+    }
+
+    function removeCopyButton() {
+        if (copyButton && copyButton.parentNode) {
+            copyButton.parentNode.removeChild(copyButton);
+            copyButton = null;
+        }
     }
 
     function flashErrorMessage(message) {
