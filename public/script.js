@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         console.error('Error occurred:', message);
                         flashErrorMessage('API limit has been reached or there\'s no connection to the server. Please try again later.');
+                        resetInputElements();
                     }
                 }
 
