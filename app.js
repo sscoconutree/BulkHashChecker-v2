@@ -15,9 +15,7 @@ const maxApiRequests = 500;
 
 app.post('/checkHashes', async (req, res) => {
     if (apiRequestCount >= maxApiRequests) {
-        const errorMessage = 'Maximum API daily quota has been reached. Please try again tomorrow.';
-        console.log(errorMessage);
-        return res.status(500).json({ success: false, message: errorMessage });
+        return res.status(500).json({ success: false });
     }
 
     const { hashes } = req.body;
