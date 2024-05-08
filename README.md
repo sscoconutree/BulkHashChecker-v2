@@ -31,5 +31,5 @@ Due to API key limitations of 4 requests/minute, there's a sleep timer in betwee
 <h3>v2.0</h3>
 
 * Improved UI.
-* Added Copy Results Button.
+* Added **"Copy Results"** button.
 * Deduplication feature upon displaying the results.
