@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         hashInput.disabled = true;
         checkButton.disabled = true;
-        checkButton.classList.add('scanning');
 
         try {
             const response = await fetch('/checkHashes', {
@@ -102,7 +101,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             hashInput.disabled = false;
             checkButton.disabled = false;
-            checkButton.classList.remove('scanning');
         }
     });
 
